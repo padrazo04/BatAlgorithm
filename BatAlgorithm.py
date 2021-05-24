@@ -1,100 +1,128 @@
-import random 
 import numpy as np
+from random import gauss
+from math import exp
 
 class BatAlgorithm():
-    def __init__(self, D, NP, N_Gen, A, r, fMin, fMax, Lower, Upper, function):
-        self.dimension = D  #dimension
-        self.populationSize = NP  #population size 
-        self.generations = N_Gen  #generations
-        self.A = A  #loudness
-        self.r = r  #pulse rate
-        self.frequency = [0] * self.populationSize  #frequency
-        self.fMin = fMin  #frequency min
-        self.fMax = fMax  #frequency max
-        self.Lower = Lower  #lower bound
-        self.Upper = Upper  #upper bound
+    def __init__(self, dimensions, populationSize, generations, A, r, 
+                 fMin, fMax, lower, upper, alpha, gamma, function):
+        self.dimensions = dimensions 
+        self.populationSize = populationSize
+        self.generations = generations
 
-        self.Lb = [0] * self.dimension  #lower bound
-        self.Ub = [0] * self.dimension  #upper bound
+        self.lower = lower  # Lower bound
+        self.upper = upper  # Upper bound
 
-        self.v = [[0 for i in range(self.dimension)] for j in range(self.populationSize)]  #velocity
-        self.Sol = [[0 for i in range(self.dimension)] for j in range(self.populationSize)]  #population of solutions
-        self.Fitness = [0] * self.populationSize  #fitness
-        self.best = [0] * self.dimension  #best solution
-        self.bestFitness = 0.0  #minimum fitness
+        self.sol = [[0 for i in range(self.dimensions)] for j in range(self.populationSize)]  # Population of solutions
+        self.v = [[0 for i in range(self.dimensions)] for j in range(self.populationSize)]  # Velocity
+        
+        self.frequency = [0] * self.populationSize
+        self.fMin = fMin
+        self.fMax = fMax
+        
+        self.A = [A] * self.populationSize  # Loudness
+        self.r = [r] * self.populationSize  # Pulse rate
+        self.r0 = [0] * self.populationSize # Pulse rate at generation 0
 
-        self.Fun = function
+        self.fitness = [0] * self.populationSize 
+        
+        self.bestSol = [0] * self.dimensions
+        self.bestFitness = 0.0
+
+        self.alpha = alpha # Constant to update loudness
+        self.gamma = gamma # Constant to update pulse rate
+
+        self.function = function # Objective Function
 
 
-    def best_bat(self):
-        bestSolPosition = 0
+    def initBats(self):
         for i in range(self.populationSize):
-            if self.Fitness[i] < self.Fitness[bestSolPosition]:
-                bestSolPosition = i
-        for i in range(self.dimension):
-            self.best[i] = self.Sol[bestSolPosition][i]
-        self.bestFitness = self.Fitness[bestSolPosition]
-
-    def init_bat(self):
-        for i in range(self.dimension):
-            self.Lb[i] = self.Lower
-            self.Ub[i] = self.Upper
-
-        for i in range(self.populationSize):
-            self.frequency[i] = 0
-            for j in range(self.dimension):
-                rnd = np.random.uniform(0, 1)
+            for j in range(self.dimensions):
                 self.v[i][j] = 0.0
-                self.Sol[i][j] = self.Lb[j] + (self.Ub[j] - self.Lb[j]) * rnd
-            self.Fitness[i] = self.Fun(self.dimension, self.Sol[i])
-        self.best_bat()
+                self.sol[i][j] = self.lower + (self.upper - self.lower) * np.random.uniform(0, 1)
 
-    def simplebounds(self, val, lower, upper):
+            self.frequency[i] = self.fMin + (self.fMax - self.fMin) * np.random.uniform(0,1)
+
+            self.A[i] = np.random.uniform(0, 1) + self.A[i]
+            self.r[i] = np.random.uniform(0, 1) + self.r[i]
+            self.r0[i] = self.r[i]
+
+            self.fitness[i] = self.function(self.dimensions, self.sol[i])
+
+
+    def findBestBat(self):
+        bestSolPosition = 0
+
+        for i in range(self.populationSize):
+            if self.fitness[i] < self.fitness[bestSolPosition]:
+                bestSolPosition = i
+
+        for i in range(self.dimensions):
+            self.bestSol[i] = self.sol[bestSolPosition][i]
+
+        self.bestFitness = self.fitness[bestSolPosition]
+
+
+    def simpleBounds(self, val, lower, upper):
         if val < lower:
             val = lower
+
         if val > upper:
             val = upper
+
         return val
 
-    def move_bat(self):
-        S = [[0.0 for i in range(self.dimension)] for j in range(self.populationSize)]
 
-        self.init_bat()
+    def calculateAvgLoudness(self):
+        add = 0.0
+
+        for i in range(self.populationSize):
+            add += self.A[i]
+
+        return add / self.populationSize
+
+
+    def moveBats(self):
+        newPos = [[0.0 for i in range(self.dimensions)] for j in range(self.populationSize)]
+
+        self.initBats()
+        self.findBestBat()
 
         for t in range(self.generations):
+            averageLoudness = self.calculateAvgLoudness()
+
             for i in range(self.populationSize):
                 rnd = np.random.uniform(0, 1)
                 self.frequency[i] = self.fMin + (self.fMax - self.fMin) * rnd
-                for j in range(self.dimension):
-                    self.v[i][j] = self.v[i][j] + (self.Sol[i][j] -
-                                                   self.best[j]) * self.frequency[i]
-                    S[i][j] = self.Sol[i][j] + self.v[i][j]
 
-                    S[i][j] = self.simplebounds(S[i][j], self.Lb[j],
-                                                self.Ub[j])
+                for j in range(self.dimensions):
+                    self.v[i][j] = self.v[i][j] + (self.sol[i][j] - self.bestSol[j]) * self.frequency[i]
+                    newPos[i][j] = self.sol[i][j] + self.v[i][j]
+                    newPos[i][j] = self.simpleBounds(newPos[i][j], self.lower, self.upper)
 
                 rnd = np.random.random_sample()
-                # print(rnd)
-                # input("continue")
 
-                if rnd > self.r:
-                    for j in range(self.dimension):
-                        S[i][j] = self.best[j] + 0.001 * random.gauss(0, 1)
-                        S[i][j] = self.simplebounds(S[i][j], self.Lb[j],
-                                                self.Ub[j])
+                if rnd > self.r[i]:
+                    for j in range(self.dimensions):
+                        epsilon = gauss(0, 1)
+                        newPos[i][j] = self.bestSol[j] + epsilon * averageLoudness
+                        newPos[i][j] = self.simpleBounds(newPos[i][j], self.lower, self.upper)
                         
-                Fnew = self.Fun(self.dimension, S[i])
+                newFitness = self.function(self.dimensions, newPos[i])
 
                 rnd = np.random.random_sample()
 
-                if (Fnew <= self.Fitness[i]) and (rnd < self.A):
-                    for j in range(self.dimension):
-                        self.Sol[i][j] = S[i][j]
-                    self.Fitness[i] = Fnew
+                if (rnd < self.A[i]) and (newFitness <= self.fitness[i]):
+                    for j in range(self.dimensions):
+                        self.sol[i][j] = newPos[i][j]
 
-                if Fnew <= self.bestFitness:
-                    for j in range(self.dimension):
-                        self.best[j] = S[i][j]
-                    self.bestFitness = Fnew
+                    self.fitness[i] = newFitness
+
+                    self.A[i] = self.alpha * self.A[i]
+                    self.r[i] = self.r0[i] * (1 - exp(-self.gamma * t))
+
+                if newFitness <= self.bestFitness:
+                    for j in range(self.dimensions):
+                        self.bestSol[j] = newPos[i][j]
+                    self.bestFitness = newFitness
 
         print(self.bestFitness)

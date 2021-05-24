@@ -1,16 +1,31 @@
-#!/usr/bin/env python2
-import random
 from BatAlgorithm import *
+from time import time
 
-def Fun(D, sol):
+
+def RosenbrockFunction(dimensions, sol):
     val = 0.0
-    for i in range(D):
-        val = val + sol[i] * sol[i]
+    for i in range(dimensions-1):
+        val += (1 - sol[i]**2)**2 + 100*(sol[i+1]-sol[i]**2)**2
     return val
 
-# For reproducive results
-#random.seed(5)
 
-for i in range(10):
-    Algorithm = BatAlgorithm(D=10, NP=40, N_Gen=1000, A=0.5, r=0.5, fMin=0.0, fMax=2.0, Lower=-10.0, Upper=10.0, function=Fun)
-    Algorithm.move_bat()
+def main():
+    for i in range(10):
+        Algorithm = BatAlgorithm (
+            dimensions=2, populationSize=40, generations=2000, 
+            A=1, r=0, fMin=-1.0, fMax=10.0, lower=-10.0, upper=10.0,
+            alpha=0.001, gamma=0.001, function=RosenbrockFunction
+        )
+
+        start = time()
+
+        Algorithm.moveBats()
+
+        end = time()
+
+        print("Elapsed time: ", end - start)
+        print("===")
+
+
+if __name__ == "__main__":
+    main()
