@@ -5,7 +5,7 @@ from time import time
 def RosenbrockFunction(dimensions, sol):
     val = 0.0
     for i in range(dimensions-1):
-        val += (1 - sol[i]**2)**2 + 100*(sol[i+1]-sol[i]**2)**2
+        val += (1 - sol[i])**2 + 100*(sol[i+1]-sol[i]**2)**2
     return val
 
 
