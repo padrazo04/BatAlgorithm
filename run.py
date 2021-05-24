@@ -12,5 +12,5 @@ def Fun(D, sol):
 #random.seed(5)
 
 for i in range(10):
-    Algorithm = BatAlgorithm(10, 40, 1000, 0.5, 0.5, 0.0, 2.0, -10.0, 10.0, Fun)
+    Algorithm = BatAlgorithm(D=10, NP=40, N_Gen=1000, A=0.5, r=0.5, fMin=0.0, fMax=2.0, Lower=-10.0, Upper=10.0, function=Fun)
     Algorithm.move_bat()

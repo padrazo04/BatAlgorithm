@@ -2,52 +2,51 @@ import random
 import numpy as np
 
 class BatAlgorithm():
-    def __init__(self, D, NP, N_Gen, A, r, Qmin, Qmax, Lower, Upper, function):
-        self.D = D  #dimension
-        self.NP = NP  #population size 
-        self.N_Gen = N_Gen  #generations
+    def __init__(self, D, NP, N_Gen, A, r, fMin, fMax, Lower, Upper, function):
+        self.dimension = D  #dimension
+        self.populationSize = NP  #population size 
+        self.generations = N_Gen  #generations
         self.A = A  #loudness
         self.r = r  #pulse rate
-        self.Qmin = Qmin  #frequency min
-        self.Qmax = Qmax  #frequency max
+        self.frequency = [0] * self.populationSize  #frequency
+        self.fMin = fMin  #frequency min
+        self.fMax = fMax  #frequency max
         self.Lower = Lower  #lower bound
         self.Upper = Upper  #upper bound
 
-        self.f_min = 0.0  #minimum fitness
-        
-        self.Lb = [0] * self.D  #lower bound
-        self.Ub = [0] * self.D  #upper bound
-        self.Q = [0] * self.NP  #frequency
+        self.Lb = [0] * self.dimension  #lower bound
+        self.Ub = [0] * self.dimension  #upper bound
 
-        self.v = [[0 for i in range(self.D)] for j in range(self.NP)]  #velocity
-        self.Sol = [[0 for i in range(self.D)] for j in range(self.NP)]  #population of solutions
-        self.Fitness = [0] * self.NP  #fitness
-        self.best = [0] * self.D  #best solution
+        self.v = [[0 for i in range(self.dimension)] for j in range(self.populationSize)]  #velocity
+        self.Sol = [[0 for i in range(self.dimension)] for j in range(self.populationSize)]  #population of solutions
+        self.Fitness = [0] * self.populationSize  #fitness
+        self.best = [0] * self.dimension  #best solution
+        self.bestFitness = 0.0  #minimum fitness
+
         self.Fun = function
 
 
     def best_bat(self):
-        i = 0
-        j = 0
-        for i in range(self.NP):
-            if self.Fitness[i] < self.Fitness[j]:
-                j = i
-        for i in range(self.D):
-            self.best[i] = self.Sol[j][i]
-        self.f_min = self.Fitness[j]
+        bestSolPosition = 0
+        for i in range(self.populationSize):
+            if self.Fitness[i] < self.Fitness[bestSolPosition]:
+                bestSolPosition = i
+        for i in range(self.dimension):
+            self.best[i] = self.Sol[bestSolPosition][i]
+        self.bestFitness = self.Fitness[bestSolPosition]
 
     def init_bat(self):
-        for i in range(self.D):
+        for i in range(self.dimension):
             self.Lb[i] = self.Lower
             self.Ub[i] = self.Upper
 
-        for i in range(self.NP):
-            self.Q[i] = 0
-            for j in range(self.D):
+        for i in range(self.populationSize):
+            self.frequency[i] = 0
+            for j in range(self.dimension):
                 rnd = np.random.uniform(0, 1)
                 self.v[i][j] = 0.0
                 self.Sol[i][j] = self.Lb[j] + (self.Ub[j] - self.Lb[j]) * rnd
-            self.Fitness[i] = self.Fun(self.D, self.Sol[i])
+            self.Fitness[i] = self.Fun(self.dimension, self.Sol[i])
         self.best_bat()
 
     def simplebounds(self, val, lower, upper):
@@ -58,42 +57,44 @@ class BatAlgorithm():
         return val
 
     def move_bat(self):
-        S = [[0.0 for i in range(self.D)] for j in range(self.NP)]
+        S = [[0.0 for i in range(self.dimension)] for j in range(self.populationSize)]
 
         self.init_bat()
 
-        for t in range(self.N_Gen):
-            for i in range(self.NP):
+        for t in range(self.generations):
+            for i in range(self.populationSize):
                 rnd = np.random.uniform(0, 1)
-                self.Q[i] = self.Qmin + (self.Qmax - self.Qmin) * rnd
-                for j in range(self.D):
+                self.frequency[i] = self.fMin + (self.fMax - self.fMin) * rnd
+                for j in range(self.dimension):
                     self.v[i][j] = self.v[i][j] + (self.Sol[i][j] -
-                                                   self.best[j]) * self.Q[i]
+                                                   self.best[j]) * self.frequency[i]
                     S[i][j] = self.Sol[i][j] + self.v[i][j]
 
                     S[i][j] = self.simplebounds(S[i][j], self.Lb[j],
                                                 self.Ub[j])
 
                 rnd = np.random.random_sample()
+                # print(rnd)
+                # input("continue")
 
                 if rnd > self.r:
-                    for j in range(self.D):
+                    for j in range(self.dimension):
                         S[i][j] = self.best[j] + 0.001 * random.gauss(0, 1)
                         S[i][j] = self.simplebounds(S[i][j], self.Lb[j],
                                                 self.Ub[j])
                         
-                Fnew = self.Fun(self.D, S[i])
+                Fnew = self.Fun(self.dimension, S[i])
 
                 rnd = np.random.random_sample()
 
                 if (Fnew <= self.Fitness[i]) and (rnd < self.A):
-                    for j in range(self.D):
+                    for j in range(self.dimension):
                         self.Sol[i][j] = S[i][j]
                     self.Fitness[i] = Fnew
 
-                if Fnew <= self.f_min:
-                    for j in range(self.D):
+                if Fnew <= self.bestFitness:
+                    for j in range(self.dimension):
                         self.best[j] = S[i][j]
-                    self.f_min = Fnew
+                    self.bestFitness = Fnew
 
-        print(self.f_min)
+        print(self.bestFitness)
