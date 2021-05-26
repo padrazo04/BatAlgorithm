@@ -16,7 +16,7 @@ Here is the pseudocode of the algorithm, implemented in BatAlgorithm.py with som
 
 ![Pseudocode of Bat Algorithm](https://i.imgur.com/AfsBlG6.png)
 
-The following images shows the equations that Bat Algorithm uses and the pseudocode step in which they are required:
+The following images show the equations that Bat Algorithm uses and the pseudocode step in which they are required:
 
 * Adjust frecuency
 
